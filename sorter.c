@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include "sorter.h"
+#include <dirent.h>
 
 //SEGFAULT IF PARAMATERS ARE NOT RIGHT (./sorter, but with no -c or parameter field to sort on)
 
@@ -416,7 +417,7 @@ void printNodes(movie * currPtr)
 				printf("%ld\n", currPtr->movie_facebook_likes); 
 				break;
 			default: 
-				printf("Fatal Error: Something went wrong with selecting the category to sort by.\n");
+				printf("Fatal Error: The category you would like to sort by is not present.\n");
 				exit(0);
 			}
 		}
@@ -428,16 +429,59 @@ void printNodes(movie * currPtr)
 int main(int argc, char ** argv) {
 	
 	if(argc < 3){
-		printf("Fatal Error: The format of the input is incorrect. Please use the format: ./sorter.c -c <column heading>\n");
+		printf("Fatal Error: The format of the input is incorrect. Please use the format: ./sorter.c -c <column heading> <-d thisdir> <-o thatdir>\n");
 		exit(0);
 	}
 	
 	//Comment this if out if testing in gdb
 	if (strcmp(argv[1], "-c") != 0){
-		printf("Fatal Error: The format of the input is incorrect. Please use the format: ./sorter.c -c <column heading>\n");
+		printf("Fatal Error: The format of the input is incorrect. Please use the format: ./sorter.c -c <column heading> <-d thisdir> <-o thatdir>\n");
 		exit(0);
 	}
 	
+	DIR* searchDir = NULL;
+	DIR* outputDir = NULL;
+	
+	//Checking to see if we are going to be searching in a specific directory instead of current
+	if(argv[3] != NULL){
+		if(strcmp(argv[3], "-d") != 0){
+			printf("Fatal Error: The format of the input is incorrect. Please use the format: ./sorter.c -c <column heading> <-d thisdir> <-o thatdir>\n");
+			exit(0);
+		}
+		else{
+			if(argv[4] == NULL){
+				printf("Fatal Error: The format of the input is incorrect. Please use the format: ./sorter.c -c <column heading> <-d thisdir> <-o thatdir>\n");
+				exit(0);
+			}
+			else{
+				searchDir = opendir(argv[4]);
+				if(searchDir == NULL){
+					printf("The file directory does not exist\n");
+					exit(0);
+				}
+			}
+		}
+	}
+	//Checking to see if we are going to be outputting to a specific directory instead of current
+	if(argv[5] != NULL){
+		if(strcmp(argv[5], "-o") != 0){
+			printf("Fatal Error: The format of the input is incorrect. Please use the format: ./sorter.c -c <column heading> <-d thisdir> <-o thatdir>\n");
+			exit(0);
+		}
+		else{
+			if(argv[6] == NULL){
+				printf("Fatal Error: The format of the input is incorrect. Please use the format: ./sorter.c -c <column heading> <-d thisdir> <-o thatdir>\n");
+				exit(0);
+			}
+			else{
+				outputDir = opendir(argv[6]);
+				if(outputDir == NULL){
+					printf("The file directory does not exist\n");
+					exit(0);
+				}
+			}
+		}
+	}
 	//What we will be sorting by (category name) is in argv[2]
 	//The index of this field in the catToked char** will be stored in sortingBy
 	int sortingBy = -1;
