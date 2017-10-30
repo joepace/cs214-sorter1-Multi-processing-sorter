@@ -207,6 +207,17 @@ int sortByCategory(char* sortColumnName){
 	}
 }
 
+int isAFile(const char * filePath){
+	struct stat statbuffer;
+	
+	return S_ISDIR(stat(filePath, &statbuffer));
+}
+
+int isADirectory(const char * filePath){
+	struct stat statbuffer;
+	
+	return S_ISREG(stat(filePath, &statbuffer));
+}
 
 //This function prints out the contents of each node in the Linked List.
 void printNodes(movie * currPtr, FILE* outputFile)
@@ -491,31 +502,76 @@ int main(int argc, char ** argv) {
 	printf("Past input checks\n");
 	struct dirent *directoryPtr;
 	int forkPid = 0;
-	
+	char* cwd = NULL;
 	if(searchDir == NULL){
-		char cwd[1024];
-		searchDir = opendir(getcwd(cwd, 1024));
+		cwd = getcwd(cwd, 1024);
+		printf("CWD = %s\n", cwd);
+		searchDir = opendir(cwd);
 	}
 	
 	if(searchDir != NULL){
 		while((directoryPtr = readdir(searchDir)) != NULL){
+			if((strcmp(directoryPtr->d_name, "..") == 0) || (strcmp(directoryPtr->d_name, ".") == 0)){
+				continue;
+			}
 			forkPid = fork();
 			if(forkPid == 0){
 				printf("%d\n", getpid());
 				break;
 			}
 		}
+		cwd = getcwd(cwd, 1024);
+		printf("CWD = %s\n", cwd);
+	
+	}
+	char* ocwd = NULL;
+	if(outputDir == NULL){
+		ocwd = getcwd(ocwd, 1024);
+		printf("CWD = %s\n", ocwd);
+		outputDir = opendir(ocwd);
 	}
 	
+	
+	if((argc >= 4) && (strcmp(argv[3],"-d") == 0)){
+			cwd = strcat(argv[4], "/");
+	}
+	else{
+			cwd = strcat(cwd, "/");
+	}
+	printf("CWD = %s\n", cwd);
 	//If we encounter a directory within the directory, we must now enter that directory and repeat the process
 	
-	
-	if((forkPid == 0) && (directoryPtr->d_type == DT_DIR)){
-		DIR* newSearchDir = opendir(strcat(strcat(argv[4], "/"), directoryPtr->d_name));
+
+	DIR* newSearchDir;
+	//SOMETHING WRONG WITH THIS CONDITIONAL - MAKE THE DIRECTORY PTR JUMP UP
+	//At some point directoryPtr->d_name is = ".."
+	if((forkPid == 0) && (newSearchDir = opendir(strcat(cwd, directoryPtr->d_name)))){
+		if((strcmp(directoryPtr->d_name, "..") == 0) || (strcmp(directoryPtr->d_name, ".") == 0)){
+				exit(0);
+		}
+		
+		
+		printf("directoryPtr->d_name = %s\n", directoryPtr->d_name);
+		printf("CWD = %s\n", cwd);
+		/*if((argc >= 4) && (strcmp(argv[3],"-d") == 0)){
+			newSearchDir = opendir(strcat(cwd, directoryPtr->d_name));
+		}
+		else{
+			newSearchDir = opendir(strcat(cwd, directoryPtr->d_name));
+		}*/
 		struct dirent *newDirectoryPtr;
+		newSearchDir = opendir(cwd);
+		
 		while((newDirectoryPtr = readdir(newSearchDir)) != NULL){
+			if((strcmp(newDirectoryPtr->d_name, "..") == 0) || (strcmp(newDirectoryPtr->d_name, ".") == 0)){
+				continue;
+			}
 			forkPid = fork();
+
 			if(forkPid == 0){
+				strcat(cwd, "/");
+				strcat(cwd, newDirectoryPtr->d_name);
+				printf("new CWD = %s\n", cwd);
 				searchDir = newSearchDir;
 				directoryPtr = newDirectoryPtr;
 				printf("%d\n", getpid());
@@ -527,8 +583,17 @@ int main(int argc, char ** argv) {
 	
 	//If we encounter a file, we must check if it is a CSV, then sort
 	//if((forkPid == 0) && (directoryPtr->d_type == DT_REG)){
-	if(forkPid == 0){
-		char* fileName = strcat(strcat(argv[4], "/"), directoryPtr->d_name);
+
+	if((forkPid == 0)){
+		char* fileName;
+		/*if((argc >= 4) && (strcmp(argv[3], "-d") == 0)){
+			fileName = strcat(cwd, directoryPtr->d_name);
+		}
+		else{
+			fileName = strcat(cwd, directoryPtr->d_name);
+		}*/
+		fileName = cwd;
+		//char* fileName = strcat(strcat(argv[4], "/"), directoryPtr->d_name);
 		printf("File name = %s\n", fileName);
 		
 		//If the file is not a CSV or the file is already sorted, ignore it and exit.
