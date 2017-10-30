@@ -541,7 +541,7 @@ int main(int argc, char ** argv) {
 	printf("CWD = %s\n", cwd);
 	//If we encounter a directory within the directory, we must now enter that directory and repeat the process
 	
-	
+
 	DIR* newSearchDir;
 	//SOMETHING WRONG WITH THIS CONDITIONAL - MAKE THE DIRECTORY PTR JUMP UP
 	//At some point directoryPtr->d_name is = ".."
@@ -567,9 +567,7 @@ int main(int argc, char ** argv) {
 				continue;
 			}
 			forkPid = fork();
-			
-			
-			
+
 			if(forkPid == 0){
 				strcat(cwd, "/");
 				strcat(cwd, newDirectoryPtr->d_name);
@@ -585,6 +583,7 @@ int main(int argc, char ** argv) {
 	
 	//If we encounter a file, we must check if it is a CSV, then sort
 	//if((forkPid == 0) && (directoryPtr->d_type == DT_REG)){
+
 	if((forkPid == 0)){
 		char* fileName;
 		/*if((argc >= 4) && (strcmp(argv[3], "-d") == 0)){
