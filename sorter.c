@@ -588,7 +588,7 @@ int main(int argc, char ** argv) {
 			}
 		}
 	
-		while(fgets(line, 500, stdin)){
+		while(fgets(line, 500, filePointer) != NULL){
 	
 			//printf("This is what the line says: %s\n", line);
 		
