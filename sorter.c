@@ -441,7 +441,8 @@ void printNodes(movie * currPtr, FILE* outputFile)
 
 //The main function is our driver that will call various functions as necessary. Such functions perform the tasks of creating new Linked List nodes, trimming spaces of strings, determining the category we are sorting by, and printing out the sorted Linked List.
 int main(int argc, char ** argv) {
-	printf("%d\n", getpid());
+	int initPID = getpid();
+	printf("Initial PID: %d\nPIDS of all child processes:\n", initPID);
 	//(*processCount)++;
 	printf("argc = %d\n", argc);
 	if(argc < 3){
@@ -455,14 +456,29 @@ int main(int argc, char ** argv) {
 		exit(0);
 	}
 	
+	
+	//Default for searchDir should be current directory, default for outputDir should be whatever searchDir is. Think Joe wanted to wait until after input checks to see if he has to do that.
 	DIR* searchDir = NULL;
 	DIR* outputDir = NULL;
 	
 	//Checking to see if we are going to be searching in a specific directory instead of current
 	if((argc >= 4) && (argv[3] != NULL)){
-		if(strcmp(argv[3], "-d") != 0){
+		if((strcmp(argv[3], "-d") != 0) && (strcmp(argv[3], "-o") != 0)){
 			printf("Fatal Error: The format of the input is incorrect. Please use the format: ./sorter.c -c <column heading> <-d thisdir> <-o thatdir>\n");
 			exit(0);
+		}
+		else if(strcmp(argv[3], "-o") == 0) {
+			if(argv[4] == NULL){
+				printf("Fatal Error: The format of the input is incorrect. Please use the format: ./sorter.c -c <column heading> -o <outputdir>\n");
+				exit(0);
+			}
+			else{
+				outputDir = opendir(argv[4]);
+				if(outputDir == NULL){
+					printf("The file directory does not exist\n");
+					exit(0);
+				}
+			}
 		}
 		else{
 			if(argv[4] == NULL){
@@ -503,12 +519,20 @@ int main(int argc, char ** argv) {
 	struct dirent *directoryPtr;
 	int forkPid = 0;
 	char* cwd = NULL;
+	
+	//If we were not given a specific directory to traverse
 	if(searchDir == NULL){
 		cwd = getcwd(cwd, 1024);
+		if(cwd == NULL) {
+			printf("Fatal error: Something wrong with default directory. Please fix me.\n");
+			exit(0);
+		}
 		printf("CWD = %s\n", cwd);
 		searchDir = opendir(cwd);
 	}
 	
+	
+	//If we were given a specified directory
 	if(searchDir != NULL){
 		while((directoryPtr = readdir(searchDir)) != NULL){
 			if((strcmp(directoryPtr->d_name, "..") == 0) || (strcmp(directoryPtr->d_name, ".") == 0)){
@@ -527,11 +551,11 @@ int main(int argc, char ** argv) {
 	char* ocwd = NULL;
 	if(outputDir == NULL){
 		ocwd = getcwd(ocwd, 1024);
-		printf("CWD = %s\n", ocwd);
+		printf("OCWD = %s\n", ocwd);
 		outputDir = opendir(ocwd);
 	}
 	
-	
+	//Wait, what is this even for?
 	if((argc >= 4) && (strcmp(argv[3],"-d") == 0)){
 			cwd = strcat(argv[4], "/");
 	}
@@ -541,7 +565,18 @@ int main(int argc, char ** argv) {
 	printf("CWD = %s\n", cwd);
 	//If we encounter a directory within the directory, we must now enter that directory and repeat the process
 	
-
+	
+	
+	
+	
+	//Jake: I left off hear trying to read the code. The last thing I was trying to figure out before I moved on is how do we know each child is getting a unique directory or file to look at? It might show up later in the code. The reason that I ask this is because there was a large amount of child processes created in my test runs, and they all printed the same initial CWD, which should be fine if it's only doing that for the amount of files that are in the current CWD... have to spend some more time on this
+	
+	
+	
+	
+	
+	
+	
 	DIR* newSearchDir;
 	//SOMETHING WRONG WITH THIS CONDITIONAL - MAKE THE DIRECTORY PTR JUMP UP
 	//At some point directoryPtr->d_name is = ".."
@@ -585,6 +620,7 @@ int main(int argc, char ** argv) {
 	//if((forkPid == 0) && (directoryPtr->d_type == DT_REG)){
 
 	if((forkPid == 0)){
+		int childCount = 0;
 		char* fileName;
 		/*if((argc >= 4) && (strcmp(argv[3], "-d") == 0)){
 			fileName = strcat(cwd, directoryPtr->d_name);
@@ -796,7 +832,7 @@ int main(int argc, char ** argv) {
 		free(currPtr);
 		free(line);
 		free(templine);
-		exit(0);
+		return childCount;
 	}
 	
 	//Keep waiting until all children have finished
