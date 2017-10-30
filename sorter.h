@@ -50,11 +50,13 @@
 
 		struct movies * next;
 	}movie; /* Movie nodes with all the information needed */
-
+	
+	//static int * const processCount = 0;
+	//static const char * const sortCategories= "color,director_name,num_critic_for_reviews,duration,director_facebook_likes,actor_3_facebook_likes,actor_2_name,actor_1_facebook_likes,gross,genres,actor_1_name,movie_title,num_voted_users,cast_total_facebook_likes,actor_3_name,facenumber_in_poster,plot_keywords,movie_imdb_link,num_user_for_reviews,language,country,content_rating,budget,title_year,actor_2_facebook_likes,imdb_score,aspect_ratio,movie_facebook_likes";
 	//sorter.c helper method prototypes
 	movie* createNode(char** catToked, int hasQuotes);
 	char* spaceTrim(char* string);
-	void printNodes(movie* currPtr);
+	void printNodes(movie* currPtr, FILE* outputFile);
 
 	//Prototypes for the functions we're using in mergesort.c - DOCUMENTATION IS IN THAT FILE
 	void merge(movie ** front, int sortingBy);
