@@ -34,3 +34,4 @@ Steps for this project:
     -Total number of processes: ZZZZ
     
 
+To begin, we had to edit our previous code from sorter0 to handle outputting to various new files. We are currently still struggling with an error in printing to the new file. Now that we aren't piping input from stdin to our project, we had to figure out how to search a directory to find a CSV file. We implemented that, and began testing on just searching the current directory we were in with the executable program. Originally, we had the movie_metadata.csv in this directory, but we made a much smaller test case in order to more quickly see the results of our program. We are also still trying to figure out how exactly we should print the total number of processes we used in this program.
