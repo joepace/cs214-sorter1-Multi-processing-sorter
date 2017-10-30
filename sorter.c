@@ -509,19 +509,26 @@ int main(int argc, char ** argv) {
 	
 	//If we encounter a directory within the directory, we must now enter that directory and repeat the process
 	
-	/*
+	
 	if((forkPid == 0) && (directoryPtr->d_type == DT_DIR)){
-		DIR* newSearchDir = opendir(directoryPtr->d_name);
+		DIR* newSearchDir = opendir(strcat(strcat(argv[4], "/"), directoryPtr->d_name));
 		struct dirent *newDirectoryPtr;
 		while((newDirectoryPtr = readdir(newSearchDir)) != NULL){
 			forkPid = fork();
+			if(forkPid == 0){
+				searchDir = newSearchDir;
+				directoryPtr = newDirectoryPtr;
+				printf("%d\n", getpid());
+				break;
+			}
 		}
 	}
-	*/
+	
+	
 	//If we encounter a file, we must check if it is a CSV, then sort
 	//if((forkPid == 0) && (directoryPtr->d_type == DT_REG)){
 	if(forkPid == 0){
-		char* fileName = directoryPtr->d_name;
+		char* fileName = strcat(strcat(argv[4], "/"), directoryPtr->d_name);
 		printf("File name = %s\n", fileName);
 		
 		//If the file is not a CSV or the file is already sorted, ignore it and exit.
