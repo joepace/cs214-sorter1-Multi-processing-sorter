@@ -68,7 +68,7 @@ movie * createNode(char** catToked, int hasQuotes){
 	ptr->title_year = atol(catToked[23]);
 	ptr->actor_2_facebook_likes = atol(catToked[24]);
 	ptr->imdb_score = atof(catToked[25]);
-	ptr->aspect_ratio= atol(catToked[26]);
+	ptr->aspect_ratio= atof(catToked[26]);
 	ptr->movie_facebook_likes = atol(catToked[27]);
 	if(hasQuotes == 0){
 		ptr->quotes = 0;
@@ -447,7 +447,7 @@ void traverseDirectory(char* path, char** argv, int sortingBy){
 		if(S_ISDIR(buffer.st_mode)){
 			//Fork a new process
 			if(pid == -1){
-					printf("%d,\n", getpid());
+					printf("%d,", getpid());
 			}
 			fflush(0);
 			pid = fork();
@@ -490,13 +490,13 @@ void traverseDirectory(char* path, char** argv, int sortingBy){
 			else{
 				//ONLY PRINTS CORRECTLY IF \n IS PRESENT IN BOTH
 				if(pid == -1){
-					printf("%d,\n", getpid());
+					printf("%d,", getpid());
 				}
 				fflush(0);
 				pid = fork();
 		
 				if(pid == 0){
-					printf("%d,\n", getpid());
+					printf("%d,", getpid());
 					sortFile(currentObject->d_name, argv, sortingBy);
 				}
 			}
@@ -517,7 +517,7 @@ void traverseDirectory(char* path, char** argv, int sortingBy){
 //This function prints out the contents of each node in the Linked List.
 void printNodes(movie * currPtr, FILE* outputFile)
 {
-	fprintf(outputFile, "color,director_name,num_critic_for_reviews,duration,director_facebook_likes,actor_3_facebook_likes,actor_2_name,actor_1_facebook_likes,gross,genres,actor_1_name,movie_title,num_voted_users,cast_total_facebook_likes,actor_3_name,facenumber_in_poster,plot_keywords,movie_imdb_link,num_user_for_reviews,language,country,content_rating,budget,title_year,actor_2_facebook_likes,imdb_score,aspect_ratio,movie_facebook_likes");
+	fprintf(outputFile, "color,director_name,num_critic_for_reviews,duration,director_facebook_likes,actor_3_facebook_likes,actor_2_name,actor_1_facebook_likes,gross,genres,actor_1_name,movie_title,num_voted_users,cast_total_facebook_likes,actor_3_name,facenumber_in_poster,plot_keywords,movie_imdb_link,num_user_for_reviews,language,country,content_rating,budget,title_year,actor_2_facebook_likes,imdb_score,aspect_ratio,movie_facebook_likes\n");
 
 	int i;
 	while(currPtr != NULL){
@@ -844,9 +844,16 @@ int main(int argc, char ** argv) {
 			traverseDirectory(cwd, argv, sortingBy);
 		}
 	}
-	
+	/*
 	if(forkPid != 0){
 		wait(NULL);
+	}
+	*/
+	
+	wait(NULL);
+	fflush(0);
+	if(forkPid != 0){
+		printf("\nTotal number of processes: \n");
 	}
 	//Jake: I left off hear trying to read the code. The last thing I was trying to figure out before I moved on is how do we know each child is getting a unique directory or file to look at? It might show up later in the code. The reason that I ask this is because there was a large amount of child processes created in my test runs, and they all printed the same initial CWD, which should be fine if it's only doing that for the amount of files that are in the current CWD... have to spend some more time on this
 	
