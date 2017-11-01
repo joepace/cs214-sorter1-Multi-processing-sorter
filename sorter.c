@@ -207,8 +207,11 @@ int sortByCategory(char* sortColumnName){
 	}
 }
 
-void sortFile(char* fileName, char** argv, int sortingBy){
+void sortFile(char* fileName, char** argv, int sortingBy, char* path){
+	//printf("outPath in sortFile = %s\n", path);
 	movie * headMovies = NULL;
+	
+	//printf("current fileName = %s\n", fileName);
 	
 	FILE* filePointer = fopen(fileName, "r");
 
@@ -216,11 +219,35 @@ void sortFile(char* fileName, char** argv, int sortingBy){
 		printf("Fatal Error: The file does not exist.\n");
 		exit(0);
 	}
+	char* categories = "color,director_name,num_critic_for_reviews,duration,director_facebook_likes,actor_3_facebook_likes,actor_2_name,actor_1_facebook_likes,gross,genres,actor_1_name,movie_title,num_voted_users,cast_total_facebook_likes,actor_3_name,facenumber_in_poster,plot_keywords,movie_imdb_link,num_user_for_reviews,language,country,content_rating,budget,title_year,actor_2_facebook_likes,imdb_score,aspect_ratio,movie_facebook_likes";
+	char* line = (char*)malloc(sizeof(char)*500);
+	memset(line, '\0', 500);
+	
+	fgets(line, 500, filePointer);
+	
+	//Remove any trailing characters (\n or \r) and replace them with \0
+	line[strcspn(line, "\n\r")] = '\0';
+	
+	if(strcmp(line, categories) !=  0){
+		printf("Fatal Error: The input file \"%s\" does not adhere to specified format\n", fileName);
+		//fclose(filePointer);
+		exit(0);
+	}
 	//Create new file name to output to.
-	char* newFileName = (char*)malloc(sizeof(char)*(strlen(fileName) + 30));
+	char* newFileName = (char*)malloc(sizeof(char)*((strlen(path) + strlen(fileName) + 30)));
 	//Determine where endOfFileName is, subtract 4 (accounts for ".csv"). Then, concatenate "-sorted-<category>.csv".
 	int endOfFileName = strlen(fileName) - 4;
-	memcpy(newFileName, fileName, endOfFileName);
+	
+	char* truncatedFileName = (char*)malloc((sizeof(char)*(strlen(fileName) + 1)));
+	truncatedFileName = memcpy(truncatedFileName, fileName, endOfFileName);
+	
+	truncatedFileName[endOfFileName + 1] = '\0';
+	
+	//printf("truncated FN = %s\n", truncatedFileName);
+	int endOfOutPath = strlen(path);
+	memcpy(newFileName, path, endOfOutPath);
+	strcat(newFileName, "/");
+	strcat(newFileName, truncatedFileName);
 	strcat(newFileName, "-sorted-");
 	strcat(newFileName, argv[2]);
 	strcat(newFileName, ".csv");
@@ -236,18 +263,9 @@ void sortFile(char* fileName, char** argv, int sortingBy){
 	int j;
 	int hasQuotes = 0;
 
-	char* line = (char*)malloc(sizeof(char)*500);
-	char* categories = "color,director_name,num_critic_for_reviews,duration,director_facebook_likes,actor_3_facebook_likes,actor_2_name,actor_1_facebook_likes,gross,genres,actor_1_name,movie_title,num_voted_users,cast_total_facebook_likes,actor_3_name,facenumber_in_poster,plot_keywords,movie_imdb_link,num_user_for_reviews,language,country,content_rating,budget,title_year,actor_2_facebook_likes,imdb_score,aspect_ratio,movie_facebook_likes";
-
-	memset(line, '\0', 500);
-
-	fgets(line, 500, filePointer);
-
-	if(strcmp(line, categories) ==  0){
-		//printf("Fatal Error: The input file does not adhere to specified format\n");
-		exit(0);
-	}
-
+	
+	
+	//printf("\nnewFileName = %s\n", newFileName);
 	FILE* outputFile = fopen(newFileName, "r");
 	
 	
@@ -404,22 +422,24 @@ void sortFile(char* fileName, char** argv, int sortingBy){
 	printNodes(currPtr, outputFile);
 
 	//This section of code will free the allocated memory for each pointer, struct, etc
-	
-	
+	//free(categories);
+	//free(truncatedFileName);
+	//free(newFileName);
 	freePtr(headMovies);
 	free(rearMovies);
-	free(currPtr);
-	free(line);
-	free(templine);
-	fclose(outputFile);
-	fclose(filePointer);
+	//free(currPtr);
+	//free(line);
+	//free(templine);
+	//fclose(outputFile);
+	//fclose(filePointer);
+	
 	//return childCount;
 
 }
 
 //This function will recursively traverse through the original given file path. If a directory is found within the original directory, the process will fork and recursively call the traverseDirectory() function. If a file is found, the function will determine whether or not it is a CSV, and then fork if it is.
-void traverseDirectory(char* path, char** argv, int sortingBy, int processSum, int printed){
-	
+void traverseDirectory(char* path, char** argv, int sortingBy, int processSum, int printed, int existsNewOutDir, char* outPath){
+	//printf("outPath in traverseDir = %s\n", outPath);
 	//flag to see if we printed or not, defaul 0, will be set to current pid after pid printed, must be passed because same process can recursively call traverseDirectory()
 	int printedpid = printed;
 	
@@ -493,7 +513,7 @@ void traverseDirectory(char* path, char** argv, int sortingBy, int processSum, i
 				
 				//Repeat process with new directory
 				//printf("\nduplicate child prob gets here\n");
-				traverseDirectory(newPath, argv, sortingBy, totalProcesses, printedpid);
+				traverseDirectory(newPath, argv, sortingBy, totalProcesses, printedpid, existsNewOutDir, outPath);
 				printf("\nbut does it get here\n");
 			}
 			
@@ -534,7 +554,12 @@ void traverseDirectory(char* path, char** argv, int sortingBy, int processSum, i
 						printf("%d,", getpid());
 						printedpid = getpid();
 					}
-					sortFile(currentObject->d_name, argv, sortingBy);
+					if(existsNewOutDir == 1){
+						sortFile(currentObject->d_name, argv, sortingBy, outPath);
+					}
+					else{
+						sortFile(currentObject->d_name, argv, sortingBy, ".");
+					}
 				}
 			}
 		}
@@ -558,6 +583,7 @@ void traverseDirectory(char* path, char** argv, int sortingBy, int processSum, i
 	}
 	//not sure if we need this addtional wait but just to be safe of any leftover children, let's do it anyways
 	wait(NULL);
+	
 	//printf("Number of total processes: %d\n", *processCount);
 	exit(totalProcesses);
 	
@@ -782,17 +808,18 @@ void printNodes(movie * currPtr, FILE* outputFile)
 		}
 			currPtr = currPtr->next;
 	}	
-		
+	//fclose(outputFile);
 }
 
 //The main function is our driver that will call various functions as necessary. Such functions perform the tasks of creating new Linked List nodes, trimming spaces of strings, determining the category we are sorting by, and printing out the sorted Linked List.
 int main(int argc, char ** argv) {
 	int totalProcesses = 0;
 	int status;
-	
+	int existsNewOutDir = 0;
+	//printf("\nargc = %d\n", argc);
 	int initPID = getpid();
 	printf("Initial PID: %d\n", initPID);
-	printf("PIDS of all child processes: \n");
+	printf("PIDS of all child processes: ");
 	
 	int sortingBy = -1;
 	sortingBy = sortByCategory(argv[2]);
@@ -813,9 +840,10 @@ int main(int argc, char ** argv) {
 	//Default for searchDir should be current directory, default for outputDir should be whatever searchDir is. Think Joe wanted to wait until after input checks to see if he has to do that.
 	DIR* searchDir = NULL;
 	DIR* outputDir = NULL;
+	char* outPath;
 	
 	//Checking to see if we are going to be searching in a specific directory instead of current
-	if((argc >= 4) && (argv[3] != NULL)){
+	if((argc == 5) && (argv[3] != NULL)){
 		if((strcmp(argv[3], "-d") != 0) && (strcmp(argv[3], "-o") != 0)){
 			printf("Fatal Error: The format of the input is incorrect. Please use the format: ./sorter.c -c <column heading> <-d thisdir> <-o thatdir>\n");
 			exit(0);
@@ -831,6 +859,9 @@ int main(int argc, char ** argv) {
 					printf("The file directory does not exist\n");
 					exit(0);
 				}
+				existsNewOutDir = 1;
+				outPath = strdup(argv[4]);
+				//printf("outPath in main = %s\n", outPath);
 			}
 		}
 		//The 4 output will be -d
@@ -857,14 +888,18 @@ int main(int argc, char ** argv) {
 				}
 				if(forkPid == 0){
 					
-					traverseDirectory(argv[4], argv, sortingBy, totalProcesses, 0);
+					traverseDirectory(argv[4], argv, sortingBy, totalProcesses, 0, existsNewOutDir, ".");
 				}
 			}
 		}
 	}
 	//Checking to see if we are going to be searching and outputting to a specific directory instead of current
-	if((argc >= 6) && (argv[5] != NULL)){
+	if((argc == 7) && (argv[5] != NULL)){
 		if(strcmp(argv[5], "-o") != 0){
+			printf("Fatal Error: The format of the input is incorrect. Please use the format: ./sorter.c -c <column heading> <-d thisdir> <-o thatdir>\n");
+			exit(0);
+		}
+		else if(strcmp(argv[3], "-d") != 0){
 			printf("Fatal Error: The format of the input is incorrect. Please use the format: ./sorter.c -c <column heading> <-d thisdir> <-o thatdir>\n");
 			exit(0);
 		}
@@ -878,6 +913,37 @@ int main(int argc, char ** argv) {
 				if(outputDir == NULL){
 					printf("The file directory does not exist\n");
 					exit(0);
+				}
+				existsNewOutDir = 1;
+				outPath = strdup(argv[6]);
+				//printf("outPath in main = %s\n", outPath);
+			}
+		
+		//The 4 output will be -d
+		
+			if(argv[4] == NULL){
+				printf("Fatal Error: The format of the input is incorrect. Please use the format: ./sorter.c -c <column heading> <-d thisdir> <-o thatdir>\n");
+				exit(0);
+			}
+			else{
+				searchDir = opendir(argv[4]);
+				if(searchDir == NULL){
+					printf("The file directory does not exist\n");
+					exit(0);
+				}
+				fflush(0);
+				forkPid = fork();
+				if(forkPid != 0) {
+					totalProcesses++;
+					//printf("\nmain: I JUST FORKED-parent, my pid is : %d, totalProcesses is now: %d\n", getpid(), totalProcesses);
+				}
+				if(forkPid == 0) {
+					totalProcesses = 0;
+					//printf("\nmain: I JUST FORKED-child, my pid is : %d, totalProcesses is now: %d\n", getpid(), totalProcesses);
+				}
+				if(forkPid == 0){
+					
+					traverseDirectory(argv[4], argv, sortingBy, totalProcesses, 0, existsNewOutDir, outPath);
 				}
 			}
 		}
@@ -911,7 +977,12 @@ int main(int argc, char ** argv) {
 		}
 		
 		if(forkPid == 0){
-			traverseDirectory(cwd, argv, sortingBy, totalProcesses, 0);
+			if(outPath == NULL){
+				outPath = ".";
+			}
+			
+			//printf("outPath in main = %s\n", outPath);
+			traverseDirectory(cwd, argv, sortingBy, totalProcesses, 0, existsNewOutDir, outPath);
 		}
 	}
 	/*
@@ -930,7 +1001,9 @@ int main(int argc, char ** argv) {
 		}
 	}
 	wait(NULL);
-
+	if(cwd != NULL){
+		free(cwd);
+	}
 	fflush(0);
 	if(getpid() == initPID){
 		totalProcesses++;
