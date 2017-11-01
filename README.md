@@ -4,37 +4,11 @@ This project is a multi-process version of the previous sorter0 project.
 team: !failing
 members: Joseph Redling-Pace and Xiaopeng (Jake) Zhou
 
+Instructions for use:
+After compiling the C files with the included Makefile, execute ./sorter with the two required parameters: "-c <category_name>". Further parameters: "-d <inputDirectory>" and "-o <outputDirectory>" are optional. One may be included without the other, but if both are included, "-d <inputDirectory>" must come before "-o <outputDirectory>". Any errors with the command line prompt will result in an error message and termination of the running program. Any errors occured during execution of the program will also result in an error message and termination of the program. Metadata results from processes terminated before completion should not be considered valid as they are not guaranteed to have finished the intended process.
+
+Documentation:
 Before we even began our project, we modified our code from last assignment to work more efficiently. We got rid of the static sized  buffers in our structs keeping track of each line, instead we replaced them with character pointers that go to a dynamically allocated size of memory suited for each string.
-
-Steps for this project:
-
--Read directory name
-
--Walk through sub-directories to find all csv files
-
--fork to sort each csv file
-
-    -output to differnt file each time
-    
--prevent zombies
-
--check for proper input
-
--output metadata to standard out
-
-  -metadata includes: total number of processes created and their pids
-  
-    -each new file, we should fork to do the actual sorting
-    
-    -each new directory, we should fork to process the directory
-    
-  -should print:
-  
-    -Initial PID: XXXXX
-    
-    -PIDS of all child processes: AAA, BBB, CCC, ...
-    
-    -Total number of processes: ZZZZ
     
 The first difficulty we ran into was trying to figure out how to change our code to print not to STDOUT, but to a file instead. Since this problem did not affect the rest of our code to begin with, we decided to postpone trying to find a solution to this issue until the rest of our code was working as intended.
 
@@ -46,3 +20,6 @@ We were also able to make more progress into figuring out the traversal of direc
 
 After realizing our previous implementation of the traversal was wrong (it worked but it wasn't recursive), we recreated the code in a function, which we could then use for recursive directory traversal. The previous bug was pretty easy to fix, we just made sure we ignored .. from readdir. However, with our new code, we ran into the issue of printing out the same pid twice. We were able to fix this... only to have it be an issue again quite soon. We were able to implement a way to keep track of the total amount of processes per execution call (by using the exit status of process), but due to some issue in the order of simultaneous processes, we would print out the same pid twice. We now had to handle this bug. We created another few test cases at this point to see how our code would act with more csvs to sort and csv in different levels.
 
+After a few different approaches, we were able to solve this issue by keeping track of a single printed pid per process. We were also able to implement the -o feature leading to a desired output directory by passing an intended path to our file sorting function, which also outputs sorted files.
+
+After a fair share of time bug fixing and patching the all-too-frequent minor mistakes we would find throughout the code, we felt confident enough that our program works properly and avoids ungraceful errors.
