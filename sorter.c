@@ -229,7 +229,7 @@ void sortFile(char* fileName, char** argv, int sortingBy, char* path){
 	line[strcspn(line, "\n\r")] = '\0';
 	
 	if(strcmp(line, categories) !=  0){
-		printf("Fatal Error: The input file \"%s\" does not adhere to specified format\n", fileName);
+		//printf("Fatal Error: The input file \"%s\" does not adhere to specified format\n", fileName);
 		//fclose(filePointer);
 		exit(0);
 	}
@@ -820,9 +820,9 @@ int main(int argc, char ** argv) {
 	int initPID = getpid();
 	printf("Initial PID: %d\n", initPID);
 	printf("PIDS of all child processes: ");
+
 	
-	int sortingBy = -1;
-	sortingBy = sortByCategory(argv[2]);
+	//printf("\nDid we pass this check?\n");
 	
 	//The input format will be incorrect if argc is 1, or an even number
 	if((argc == 1) || ((argc % 2) == 0)){
@@ -830,11 +830,16 @@ int main(int argc, char ** argv) {
 		exit(0);
 	}
 	
+	//printf("\nWhat about this check?\n");
+	
 	//This must ALWAYS be present
 	if (strcmp(argv[1], "-c") != 0){
 		printf("Fatal Error: The format of the input is incorrect. Please use the format: ./sorter.c -c <column heading> <-d thisdir> <-o thatdir>\n");
 		exit(0);
 	}
+	
+	int sortingBy = -1;
+	sortingBy = sortByCategory(argv[2]);
 	
 	int forkPid;
 	//Default for searchDir should be current directory, default for outputDir should be whatever searchDir is. Think Joe wanted to wait until after input checks to see if he has to do that.
