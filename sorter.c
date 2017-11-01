@@ -225,18 +225,7 @@ void sortFile(char* fileName, char** argv, int sortingBy){
 	strcat(newFileName, argv[2]);
 	strcat(newFileName, ".csv");
 	//printf("NEW FILE NAME: %s\n", newFileName);
-	FILE* outputFile = fopen(newFileName, "r");
 	
-	
-	//If outputFile already exists, don't even bother with rest of method.
-	if(outputFile != NULL){
-		//printf("Fatal Error: File \"%s\" already exists.\n", newFileName);
-		exit(0);
-	}
-	else{
-		//printf("OUTPUTFILE OPENED\n\n");
-		outputFile = fopen(newFileName, "w");
-	}
 	//printf("Printing out into the file: %s\n", newFileName);
 	
 	
@@ -255,10 +244,23 @@ void sortFile(char* fileName, char** argv, int sortingBy){
 	fgets(line, 500, filePointer);
 
 	if(strcmp(line, categories) ==  0){
-		printf("Fatal Error: The input file does not adhere to specified format\n");
+		//printf("Fatal Error: The input file does not adhere to specified format\n");
 		exit(0);
 	}
 
+	FILE* outputFile = fopen(newFileName, "r");
+	
+	
+	//If outputFile already exists, don't even bother with rest of method.
+	if(outputFile != NULL){
+		//printf("Fatal Error: File \"%s\" already exists.\n", newFileName);
+		exit(0);
+	}
+	else{
+		//printf("OUTPUTFILE OPENED\n\n");
+		outputFile = fopen(newFileName, "w");
+	}
+	
 	if(line == NULL){
 		printf("Fatal Error: The input file is blank.\n");
 		exit(0);
@@ -416,7 +418,13 @@ void sortFile(char* fileName, char** argv, int sortingBy){
 }
 
 //This function will recursively traverse through the original given file path. If a directory is found within the original directory, the process will fork and recursively call the traverseDirectory() function. If a file is found, the function will determine whether or not it is a CSV, and then fork if it is.
-void traverseDirectory(char* path, char** argv, int sortingBy){
+void traverseDirectory(char* path, char** argv, int sortingBy, int processSum, int printed){
+	
+	//flag to see if we printed or not, defaul 0, will be set to current pid after pid printed, must be passed because same process can recursively call traverseDirectory()
+	int printedpid = printed;
+	
+	int totalProcesses = processSum;
+	int status;
 	
 	int pid = -1;
 	DIR* directoryPointer;
@@ -446,19 +454,32 @@ void traverseDirectory(char* path, char** argv, int sortingBy){
 		//If the current object being read is a directory...
 		if(S_ISDIR(buffer.st_mode)){
 			//Fork a new process
-			if(pid == -1){
+			if(printedpid != getpid()) {
+				if(pid == -1){
 					printf("%d,", getpid());
+					printedpid = getpid();
+				}
 			}
 			fflush(0);
 			pid = fork();
+			if(pid != 0) {
+				totalProcesses++;
+				//printf("\nTraverse: I JUST FORKED-parent, my pid is : %d, totalProcesses is now: %d\n", getpid(), totalProcesses);
+			}
+			if(pid == 0) {
+				//printf("TEST TEST TEST TEST: %d\n", getpid());
+				totalProcesses = 0;
+				//printf("\nTraverse: I JUST FORKED-child, my pid is : %d, totalProcesses is now: %d\n", getpid(), totalProcesses);
 			
-			if(pid == 0){
 				//Print out PID of child process
-				printf("%d,", getpid());
+				if(printedpid != getpid()) {
+					printf("%d,", getpid());
+					printedpid = getpid();
+				}
 				
 				//These are edge names that mess up the traversal (".." make the pointer go up a level)
 				if((strcmp(currentObject->d_name, "..") == 0) || (strcmp(currentObject->d_name, ".") == 0)){
-					exit(0);
+					exit(totalProcesses);
 				}
 				
 				//We create a char array located in the stack that will hold the path to the new directory we must traverse.
@@ -471,7 +492,9 @@ void traverseDirectory(char* path, char** argv, int sortingBy){
 				strcat(newPath, currentObject->d_name);
 				
 				//Repeat process with new directory
-				traverseDirectory(newPath, argv, sortingBy);
+				//printf("\nduplicate child prob gets here\n");
+				traverseDirectory(newPath, argv, sortingBy, totalProcesses, printedpid);
+				printf("\nbut does it get here\n");
 			}
 			
 			
@@ -489,28 +512,54 @@ void traverseDirectory(char* path, char** argv, int sortingBy){
 			//The only remaining option is for the file to be considered for sorting. Thus, fork a new process.
 			else{
 				//ONLY PRINTS CORRECTLY IF \n IS PRESENT IN BOTH
-				if(pid == -1){
-					printf("%d,", getpid());
+				if(printedpid != getpid()) {
+					if(pid == -1){
+						printf("%d,", getpid());
+						printedpid = getpid();
+					}
 				}
 				fflush(0);
 				pid = fork();
-		
+				if(pid != 0) {
+					totalProcesses++;
+					//printf("\ntraverse-else: I JUST FORKED-parent, my pid is : %d, totalProcesses is now: %d\n", getpid(), totalProcesses);
+				}
+				if(pid == 0) {
+					totalProcesses = 0;
+					//printf("\ntraverse-else: I JUST FORKED-child, my pid is : %d, totalProcesses is now: %d\n", getpid(), totalProcesses);
+				}
+				
 				if(pid == 0){
-					printf("%d,", getpid());
+					if(printedpid != getpid()) {
+						printf("%d,", getpid());
+						printedpid = getpid();
+					}
 					sortFile(currentObject->d_name, argv, sortingBy);
 				}
 			}
 		}
+		//printf("\nare we restarting the loop before printing again? We must be\n");
 		
 	}
 	//Traverse back up to previous file path
 	chdir("..");
 	closedir(directoryPointer);
 	
-	if(pid != 0){
-		wait(NULL);
-		//printf("Number of total processes: %d\n", *processCount);
+	//printf("\nI am process: %d. My totalProcesses is : %d\n", getpid(), totalProcesses);
+	int i = 0;
+	int total = totalProcesses;
+	for(i = 0; i < total; i++) {
+		wait(&status);
+		if(WIFEXITED(status)) {
+			totalProcesses += WEXITSTATUS(status);
+			//printf("\npid: %d, Exit status: %d\n", getpid(), WEXITSTATUS(status));
+			//printf("\nI am process: %d. I should be updating totalProcesses, it is now: %d.\n", getpid(),  totalProcesses);
+		}
 	}
+	//not sure if we need this addtional wait but just to be safe of any leftover children, let's do it anyways
+	wait(NULL);
+	//printf("Number of total processes: %d\n", *processCount);
+	exit(totalProcesses);
 	
 }
 
@@ -738,9 +787,12 @@ void printNodes(movie * currPtr, FILE* outputFile)
 
 //The main function is our driver that will call various functions as necessary. Such functions perform the tasks of creating new Linked List nodes, trimming spaces of strings, determining the category we are sorting by, and printing out the sorted Linked List.
 int main(int argc, char ** argv) {
+	int totalProcesses = 0;
+	int status;
+	
 	int initPID = getpid();
 	printf("Initial PID: %d\n", initPID);
-	printf("PIDS of all child processes: ");
+	printf("PIDS of all child processes: \n");
 	
 	int sortingBy = -1;
 	sortingBy = sortByCategory(argv[2]);
@@ -795,9 +847,17 @@ int main(int argc, char ** argv) {
 				}
 				fflush(0);
 				forkPid = fork();
+				if(forkPid != 0) {
+					totalProcesses++;
+					//printf("\nmain: I JUST FORKED-parent, my pid is : %d, totalProcesses is now: %d\n", getpid(), totalProcesses);
+				}
+				if(forkPid == 0) {
+					totalProcesses = 0;
+					//printf("\nmain: I JUST FORKED-child, my pid is : %d, totalProcesses is now: %d\n", getpid(), totalProcesses);
+				}
 				if(forkPid == 0){
 					
-					traverseDirectory(argv[4], argv, sortingBy);
+					traverseDirectory(argv[4], argv, sortingBy, totalProcesses, 0);
 				}
 			}
 		}
@@ -838,10 +898,20 @@ int main(int argc, char ** argv) {
 			printf("Fatal error: Something wrong with default directory. Please fix me.\n");
 			exit(0);
 		}
+		
 		fflush(0);
 		forkPid = fork();
+		if(forkPid != 0) {
+			totalProcesses++;
+			//printf("\nmain-2: I JUST FORKED-parent, my pid is : %d, totalProcesses is now: %d\n", getpid(), totalProcesses);
+		}
+		if(forkPid == 0) {
+			totalProcesses = 0;
+			//printf("\nmain-2: I JUST FORKED-child, my pid is : %d, totalProcesses is now: %d\n", getpid(), totalProcesses);
+		}
+		
 		if(forkPid == 0){
-			traverseDirectory(cwd, argv, sortingBy);
+			traverseDirectory(cwd, argv, sortingBy, totalProcesses, 0);
 		}
 	}
 	/*
@@ -849,17 +919,28 @@ int main(int argc, char ** argv) {
 		wait(NULL);
 	}
 	*/
-	
-	wait(NULL);
-	fflush(0);
-	if(forkPid != 0){
-		printf("\nTotal number of processes: \n");
+	int i = 0;
+	int total = totalProcesses;
+	for(i = 0; i < total; i++) {
+		wait(&status);
+		if(WIFEXITED(status)) {
+			totalProcesses += WEXITSTATUS(status);
+			//printf("\npid: %d, Exit status: %d\n", getpid(), WEXITSTATUS(status));
+			//printf("\nI am process: %d. I should be updating totalProcesses, it is now: %d.\n", getpid(),  totalProcesses);
+		}
 	}
-	//Jake: I left off hear trying to read the code. The last thing I was trying to figure out before I moved on is how do we know each child is getting a unique directory or file to look at? It might show up later in the code. The reason that I ask this is because there was a large amount of child processes created in my test runs, and they all printed the same initial CWD, which should be fine if it's only doing that for the amount of files that are in the current CWD... have to spend some more time on this
+	wait(NULL);
+
+	fflush(0);
+	if(getpid() == initPID){
+		totalProcesses++;
+		printf("\nTotal number of processes: %d\n", totalProcesses);
+	}
+	//Jake: it seems that the first child is returning correctly and getting the proper status, let's do some more testing for children of children
 	
-	//Joe: I added the new function prototypes to sorter.h. Most of the code is good. Look at "PID of child process" output - some repeats and some not in order unless \n is included in the output -but, needs to be (AAA,BBB,CCC). Also, implement -o operation. Also, the fatal output error for if the file is already sorter is not necessary and will mess up the output.
+	//Joe: Also, implement -o operation. Also, the fatal output error for if the file is already sorter is not necessary and will mess up the output.
 	
 	//NOTE: fflush(0) is necessary before forking in order to clear the I/O buffer to repeat incredibly repetitive output.
 	
-	return 0;
+	exit(0);
 }
