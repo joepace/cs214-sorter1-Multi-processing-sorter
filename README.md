@@ -8,7 +8,7 @@ Instructions for use:
 
 After compiling the C files with the included Makefile, execute ./sorter with the two required parameters: "-c <category_name>". Further parameters: "-d <inputDirectory>" and "-o <outputDirectory>" are optional. One may be included without the other, but if both are included, "-d <inputDirectory>" must come before "-o <outputDirectory>". Any errors with the command line prompt will result in an error message and termination of the running program. Any errors occured during execution of the program will also result in an error message and termination of the program. Metadata results from processes terminated before completion should not be considered valid as they are not guaranteed to have finished the intended process.
 
-Important note: our process does not fork for CSVs that have sorted in the title, we simple ignore those in our program as we are assuming some other child process has already dealt with this file.
+Important note: our process does not fork for CSVs that have sorted in the title, we simple ignore those in our program as we are assuming some other child process has already dealt with this file. We also skip over files with the improper first line, i.e., line is not color,director_name,...... These files will not produce output files
 
 
 Documentation:
