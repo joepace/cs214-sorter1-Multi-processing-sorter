@@ -845,7 +845,7 @@ int main(int argc, char ** argv) {
 	//Default for searchDir should be current directory, default for outputDir should be whatever searchDir is. Think Joe wanted to wait until after input checks to see if he has to do that.
 	DIR* searchDir = NULL;
 	DIR* outputDir = NULL;
-	char* outPath;
+	char* outPath = NULL;
 	
 	//Checking to see if we are going to be searching in a specific directory instead of current
 	if((argc == 5) && (argv[3] != NULL)){
@@ -865,7 +865,19 @@ int main(int argc, char ** argv) {
 					exit(0);
 				}
 				existsNewOutDir = 1;
-				outPath = strdup(argv[4]);
+				if(strcmp(argv[4], "./") == 0){
+					
+					outPath = getcwd(outPath, 1024);
+				}
+				else if(strstr(argv[4], "../")){
+					outPath = getcwd(outPath, 1024);
+					outPath = strcat(outPath, "/");
+					outPath = strcat(outPath, argv[4]);
+					//printf("outPath = %s\n", outPath);
+				}
+				else{
+					outPath = strdup(argv[4]);
+				}
 				//printf("outPath in main = %s\n", outPath);
 			}
 		}
@@ -920,7 +932,21 @@ int main(int argc, char ** argv) {
 					exit(0);
 				}
 				existsNewOutDir = 1;
-				outPath = strdup(argv[6]);
+				
+				if(strcmp(argv[6], "./") == 0){
+					
+					outPath = getcwd(outPath, 1024);
+				}
+				else if(strstr(argv[6], "../")){
+					outPath = getcwd(outPath, 1024);
+					outPath = strcat(outPath, "/");
+					outPath = strcat(outPath, argv[6]);
+					//printf("outPath = %s\n", outPath);
+				}
+				else{
+					outPath = strdup(argv[6]);
+				}
+				
 				//printf("outPath in main = %s\n", outPath);
 			}
 		
